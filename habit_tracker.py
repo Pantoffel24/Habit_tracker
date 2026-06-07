@@ -121,17 +121,17 @@ def Diet_tracker(data, yesterday):
 
 
 
-def Gossip_Page():
-    st.subheader('Gossip Tracker')
-    st.write("For keeping track of how often you DON'T gossip. You know you want to. Stop it.")
+def Other_Page():
+    st.subheader('Other')
+    st.write("TBD")
 
 # --- Sidebar Navigation Menu ---
 with st.sidebar:
     st.title('Navigation')
-    page = st.radio('Go to', ['Diet Tracker', 'Gossip Tracker'])
+    page = st.radio('Go to', ['Diet Tracker', 'Other'])
 
 # --- Routing Engine ---
 if page == 'Diet Tracker':
     Diet_tracker(data, yesterday)
-elif page == 'Gossip Tracker':
-    Gossip_Page()
+elif page == 'Other':
+    Other_Page()
