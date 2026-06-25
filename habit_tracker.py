@@ -4,7 +4,7 @@ from supabase import Client, create_client
 
 # --- Setting up UI Config (MUST be at the very top) ---
 st.set_page_config(page_title='Habit Tracker')
-st.title('Diet tracker')
+
 
 # Data config
 URL = st.secrets["SUPABASE_URL"]
@@ -25,10 +25,12 @@ def save_data(table_name,date_str, action='add'):
 # Global Data Fetch
 data = load_data('diet_data')
 data_journal = load_data('journal_data')
+data_stretching = load_data('stretching_data')
 yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
 
 # --- Functions for page dynamics ---
 def Diet_tracker(data, yesterday):
+    st.title('Diet tracker')
     st.subheader('For tracking each day you ate a good amount.')
     st.subheader('You got this!')
     
@@ -122,8 +124,8 @@ def Diet_tracker(data, yesterday):
 
 
 
-def Other_Page():
-    st.subheader('Journal Tracking')
+def Journal_Page():
+    st.title('Journal Tracking')
     st.write('')
 
     #This code is identical to the Diet tracker, but you can customize it for other habits or journaling.
@@ -212,13 +214,103 @@ def Other_Page():
     st.progress(progress_weekly)
 
 
+
 # --- Sidebar Navigation Menu ---
 with st.sidebar:
     st.title('Navigation')
-    page = st.radio('Go to', ['Diet Tracker', 'Other'])
+    page = st.radio('Go to', ['Diet Tracker', 'Journal','Stretching'])
 
 # --- Routing Engine ---
 if page == 'Diet Tracker':
     Diet_tracker(data, yesterday)
-elif page == 'Other':
-    Other_Page()
+elif page == 'Journal':
+    Journal_Page()
+elif page == 'Stretching':
+
+
+    #Stretching code
+    st.title('Stretching Tracker')
+    last_7_days = []
+    for i in range(7):
+        temp_day = (datetime.now() - timedelta(days=1)) - timedelta(days=i)
+        date_string = temp_day.strftime("%Y-%m-%d")
+        last_7_days.append(date_string)
+
+    weekly_count = 0
+    for day in last_7_days:
+        if day in data_stretching['completed_days']:
+            weekly_count += 1
+            
+    if weekly_count == 7:
+        st.balloons()
+        st.subheader("Congratulations! You nailed 1 week!")
+
+    #The following is button and calendar logic. Identical to the diet tracker
+     # FIXED: Restructured the button logic scope
+    if yesterday in data_stretching['completed_days']:
+        st.success('Good job!')
+        if st.button('Unmark Yesterday'):
+            save_data('stretching_data',yesterday, action='remove')
+            st.rerun()
+    else:
+        if st.button('Complete Yesterday', use_container_width=True):
+            save_data('stretching_data', yesterday, action='add')
+            st.rerun()
+            
+    st.divider()
+
+    #Visual history, the same as the diet tracker
+    # Visual history
+    st.write('Progress last 30 days')
+
+    start_date = datetime.now() - timedelta(days=29)
+    today = datetime.now().strftime("%Y-%m-%d")
+
+    #Initialize grid html
+    grid_html = '<div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; text-align: center;">'
+
+    for i in range(30):
+        date_add = start_date + timedelta(days=i)
+        current_date = date_add.strftime("%Y-%m-%d")
+        display_date = date_add.strftime("%d")
+        if current_date == today:
+            emoji = "⬜"
+        elif current_date in data_stretching['completed_days']:
+            emoji = "✅"
+        else: 
+            emoji = "🟥"
+    
+        #Grid html set up instead of the columns strat with streamlit
+        grid_html += f'''<div style="border: 1px solid #333; padding: 5px; border-radius: 5px; background-color: #111;"><span style="font-size: 12px; font-weight: bold; color: #aaa;">{display_date}</span><br><span style="font-size: 18px;">{emoji}</span></div>'''
+
+    grid_html += '</div>'
+
+    #Render the grid
+    st.markdown(grid_html, unsafe_allow_html = True)
+    st.write("")#Spacer
+
+
+    # Streak calculation
+    streak = 0
+    check_date = datetime.now() - timedelta(days=1)
+    while check_date.strftime("%Y-%m-%d") in data_stretching['completed_days']:
+        streak += 1
+        check_date -= timedelta(days=1)
+
+    st.write(f"Current Streak: {streak} days")
+
+    # Goal logic
+    total_completed = len(data_stretching['completed_days'])
+    weekly_goal = 7
+    monthly_goal = 31
+    progress_monthly = min(total_completed/monthly_goal, 1.0)
+
+    # Display bars
+    st.write(f'## Monthly Goal: {total_completed}/{monthly_goal} days')
+    st.progress(progress_monthly)
+
+    st.write(f'## Weekly Challenge: {weekly_count}/{weekly_goal} days')
+    progress_weekly = min(weekly_count/weekly_goal, 1.0)
+    st.progress(progress_weekly)
+
+    
